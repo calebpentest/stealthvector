@@ -65,7 +65,6 @@ fn main() {
     }
 }
 
-/// Thread-safe function to append a key to the log file.
 fn log_key(key: String, lock: &Arc<Mutex<()>>) -> std::io::Result<()> {
     let _guard = lock.lock().unwrap();
     let mut file = OpenOptions::new()
